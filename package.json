@@ -1,0 +1,20 @@
+{
+  "name": "school-announcements",
+  "version": "1.0.0",
+  "description": "Automate PTO stuff for Coppell North",
+  "main": "index.js",
+  "scripts": {
+    "start": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules index.mjs",
+    "start:dev": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules index.mjs",
+    "test": "env $(cat .env | grep -v \"#\" | xargs -0) tap examples/**/*.mjs",
+    "test:local": "env $(cat .env | grep -v \"#\" | xargs -0) tap -w"
+  },
+  "author": "Joey Guerra",
+  "license": "ISC",
+  "dependencies": {
+    "googleapis": "^39.2.0"
+  },
+  "devDependencies": {
+    "tap": "^14.6.1"
+  }
+}
