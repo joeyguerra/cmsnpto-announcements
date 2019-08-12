@@ -64,3 +64,4 @@ acme
 .vscode
 
 credentials.json
+token.json
