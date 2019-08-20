@@ -50,7 +50,8 @@ const GoogleDrive = {
     }
 }
 
-async function main(){
+async function main(args){
+    console.log(args)
     let credentials = await File.readFile("credentials.json", "utf-8")
     credentials = JSON.parse(credentials)
     const {client_secret, client_id, redirect_uris} = credentials.web
@@ -80,24 +81,33 @@ async function main(){
     let days = Dates.weekMondayThurFridayRange(today).map(d => {
         let month = Dates.formatMonthDate(d).toLowerCase()
         month = `${month.charAt(0).toUpperCase()}${month.slice(1)}`
-        return month
+        return {day: d, month}
     })
     let thisWeeksFiles = []
-    for(let i = 0; i < days.length-1; i++) {
+    for(let i = 0; i < days.length; i++) {
         let day = days[i]
-        let filesForDay = await GoogleDrive.list(oAuth2Client, {q: `'${response.data.files.find(f=>f.name == day).id}' in parents`,
+        let filesForDay = await GoogleDrive.list(oAuth2Client, {q: `'${response.data.files.find(f=>f.name == day.month).id}' in parents`,
             corpora: "user",
             fields: "nextPageToken, files(id, name),files/parents",
             pageToken: null
         })
-        filesForDay.data.files.forEach(f=>thisWeeksFiles.push(f))
+        thisWeeksFiles.push({day: day, files: filesForDay.data.files})
     }
-    let fileMeta = await GoogleDrive.get(oAuth2Client, {
-        fileId: thisWeeksFiles[0].id,
-        mimeType: "text/plain"
-    })
-    //console.log(thisWeeksFiles)
-    console.log(fileMeta.data)
+    let html = []
+    for(let i = 0; i < thisWeeksFiles.length; i++){
+        let f = thisWeeksFiles[i]
+        html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
+        for(let k = 0; k < f.files.length; k++){
+            let file = f.files[k]
+            let fileMeta = await GoogleDrive.get(oAuth2Client, {
+                fileId: file.id,
+                mimeType: "text/plain"
+            })
+            fileMeta.data.split("\r\n").filter(t=>t.length > 0).map(t=>`<li>${t}</li>`).forEach(t=>html.push(t))
+        }
+        html.push("</ul>")
+    }
+    console.log(html.join("\r\n"))
 }
 
-main().then(c=>{}).catch(e=>console.error(e))
+main(process.argv).then(c=>{}).catch(e=>console.error(e))
