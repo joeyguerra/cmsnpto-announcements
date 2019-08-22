@@ -96,18 +96,21 @@ async function main(args){
     let html = []
     for(let i = 0; i < thisWeeksFiles.length; i++){
         let f = thisWeeksFiles[i]
-        html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
+        html.push(`<div style="text-align: left;"><p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
         for(let k = 0; k < f.files.length; k++){
             let file = f.files[k]
             let fileMeta = await GoogleDrive.get(oAuth2Client, {
                 fileId: file.id,
                 mimeType: "text/plain"
             })
-            fileMeta.data.split("\r\n").filter(t=>t.length > 0).map(t=>`<li>${t}</li>`).forEach(t=>html.push(t))
+            html.push("<li>")
+            fileMeta.data.split("\r\n").filter(t=>t.length > 0).map(t=>`<p>${t}</p>`).forEach(t=>html.push(t))
+            html.push("</li>")
         }
-        html.push("</ul>")
+        html.push("</ul></div>")
     }
     console.log(html.join("\r\n"))
+    await File.writeFile("output.html", `<!doctype html><html><head></head><body>${html.join("\r\n")}</body></html>`)
 }
 
 main(process.argv).then(c=>{}).catch(e=>console.error(e))

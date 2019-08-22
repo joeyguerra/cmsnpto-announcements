@@ -65,3 +65,5 @@ acme
 
 credentials.json
 token.json
+
+output.html
