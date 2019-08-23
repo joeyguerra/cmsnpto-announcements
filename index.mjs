@@ -2,6 +2,7 @@ import GoogleApis from "googleapis"
 import fs from "fs"
 import readline from "readline"
 import Dates from "./lib/Dates.mjs"
+import service from "./server/app.mjs"
 
 const File = fs.promises
 const SCOPES = ["https://www.googleapis.com/auth/drive"]
@@ -38,12 +39,12 @@ const GoogleDrive = {
             })
             rl.question("Enter the code from that page here:", code => {
                 rl.close()
-                oAuth2Client.getToken(code, (err, token) => {
+                oAuth2Client.getToken(code, async (err, token) => {
                     if (err) return reject(err)
                     oAuth2Client.setCredentials(token)
-                    let error = File.writeFile(TOKEN_PATH, JSON.stringify(token))
+                    let error = await File.writeFile(TOKEN_PATH, JSON.stringify(token))
                     if(error) return reject(error)
-                    resolve(oAuth2Client)
+                    resolve(JSON.stringify(token))
                 })
             })
         })
@@ -57,8 +58,10 @@ async function main(args){
     const {client_secret, client_id, redirect_uris} = credentials.web
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
     let token = await GoogleDrive.isAuthed()
-    if(token != null) oAuth2Client.setCredentials(JSON.parse(token))
-    else await GoogleDrive.executeAuthSequence(oAuth2Client)
+    if(token == null) {
+        token = await GoogleDrive.executeAuthSequence(oAuth2Client)        
+    }
+    oAuth2Client.setCredentials(JSON.parse(token))
     let response = await GoogleDrive.list(oAuth2Client, {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
@@ -112,5 +115,11 @@ async function main(args){
     console.log(html.join("\r\n"))
     await File.writeFile("output.html", `<!doctype html><html><head></head><body>${html.join("\r\n")}</body></html>`)
 }
-
-main(process.argv).then(c=>{}).catch(e=>console.error(e))
+service.then(s=>{
+    main(process.argv).then(c=>{
+        process.exit(0)
+    }).catch(e=>console.error(e))
+}).catch(e=>{
+    console.error(e)
+    process.exit(1)
+})
