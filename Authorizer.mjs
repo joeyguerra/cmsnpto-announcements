@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
   .get("/", (req, res)=>{
       const code = req.query.code
       process.emit("code was received", code)
-      res.send(code)
+      res.send(`<!doctype html><html><head><title>Authorized Code</title></head><body><pre>${code}</pre></body></html>`)
   })
 
 const server = () => {

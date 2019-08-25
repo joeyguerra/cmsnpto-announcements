@@ -2,34 +2,17 @@ import GoogleApis from "googleapis"
 import fs from "fs"
 import Dates from "./lib/Dates.mjs"
 import Authorizer from "./Authorizer.mjs"
-import {MessageNotHandled, sendMessageTo, sendAsyncMessageTo} from "./lib/MessagePassing.mjs"
+import {sendMessageTo, sendAsyncMessageTo} from "./lib/MessagePassing.mjs"
 import Arguments from "./lib/Arguments.mjs"
 import FileListerInFolder from "./lib/FileListerInFolder.mjs"
-const TOKEN_PATH = "token.json"
+import GoogleDrive from "./lib/GoogleDrive.mjs"
 const File = fs.promises
 const google = GoogleApis.google
 
-
 async function main(args){
-    const params = sendMessageTo(Arguments, "parse", ...args)
     let credentials = await sendAsyncMessageTo(File, "readFile", "credentials.json", "utf-8")
     credentials = JSON.parse(credentials)
-    const {client_secret, client_id, redirect_uris} = credentials.web
-    const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
-    let token = null
-    try{
-        token = await sendAsyncMessageTo(File, "readFile", TOKEN_PATH, "utf-8")
-        token = JSON.parse(token)
-    } catch(e){ }
-    if(token == null || token.expiry_date <= (new Date()).getTime()) {
-        token = await sendAsyncMessageTo(Authorizer, "executeAuthSequence", oAuth2Client)
-    }
-    sendMessageTo(oAuth2Client, "setCredentials", token)
-    let error = await sendAsyncMessageTo(File, "writeFile", TOKEN_PATH, JSON.stringify(token))
-    if(error) {
-        return console.error(error)
-    }
-    const drive = sendMessageTo(google, "drive", {version: "v3", auth: oAuth2Client})
+    let drive = await sendAsyncMessageTo(GoogleDrive, "execute", credentials, File, google, Authorizer)
     let response = await sendAsyncMessageTo(drive.files, "list", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
@@ -37,6 +20,7 @@ async function main(args){
     })
     let id = response.data.files[0].id
     let today = new Date()
+    const params = sendMessageTo(Arguments, "parse", ...args)
     if(params.date){
         today = new Date(params.date)
     }
@@ -82,6 +66,7 @@ async function main(args){
     console.log(html.join("\r\n"))
     await sendAsyncMessageTo(File, "writeFile", "output.html", `<!doctype html><html><head></head><body>${html.join("\r\n")}</body></html>`, {encoding: "UTF-8"})
 }
+
 main(process.argv).then(c=>{
     process.exit(0)
 }).catch(e=>console.error(e))
