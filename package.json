@@ -7,7 +7,8 @@
     "start": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules index.mjs",
     "start:dev": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules index.mjs",
     "test": "env $(cat .env | grep -v \"#\" | xargs -0) tap examples/**/*.mjs",
-    "test:local": "env $(cat .env | grep -v \"#\" | xargs -0) tap -w"
+    "test:local": "env $(cat .env | grep -v \"#\" | xargs -0) tap -w",
+    "authorize": "node --experimental-modules authorize.mjs"
   },
   "author": "Joey Guerra",
   "license": "ISC",

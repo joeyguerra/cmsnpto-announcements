@@ -1,55 +1,13 @@
 import GoogleApis from "googleapis"
 import fs from "fs"
-import readline from "readline"
 import Dates from "./lib/Dates.mjs"
-import service from "./server/app.mjs"
+import Authorizer from "./Authorizer.mjs"
+import MessagePassing from "./lib/MessagePassing.mjs"
+const TOKEN_PATH = "token.json"
+const {MessageNotHandled, sendMessageTo, sendAsyncMessageTo} = MessagePassing
 
 const File = fs.promises
-const SCOPES = ["https://www.googleapis.com/auth/drive"]
 const google = GoogleApis.google
-const TOKEN_PATH = "token.json"
-
-const Authorizer = {
-    async executeAuthSequence(oAuth2Client){
-        const listener = service()
-        return new Promise((resolve, reject)=>{
-            const authUrl = oAuth2Client.generateAuthUrl({
-                access_type: "offline",
-                scope: SCOPES,
-            })
-            console.log("Go to URL:", authUrl)
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout,
-            })
-            process.on("code was received", code => {
-                rl.close()
-                listener.close()
-                oAuth2Client.getToken(code, async (err, token) => {
-                    if (err) return reject(err)
-                    console.log("Code was received. Setting credentials.")
-                    oAuth2Client.setCredentials(token)
-                    let error = await File.writeFile(TOKEN_PATH, JSON.stringify(token))
-                    if(error) return reject(error)
-                    resolve(token)
-                })
-            })
-        })
-    }
-}
-const MessageNotHandled = (m)=>{
-    return {
-        error: m | "Message Not Handled"
-    }
-}
-function sendMessageTo(obj, selector, ...parameters){
-    if(obj[selector]) return obj[selector](...parameters)
-    else return MessageNotHandled()
-}
-async function sendAsyncMessageTo(obj, selector, ...parameters){
-    if(obj[selector]) return await obj[selector](...parameters)
-    else return MessageNotHandled()
-}
 
 const Arguments = {
     parse(...args){
@@ -95,6 +53,10 @@ async function main(args){
         token = await sendAsyncMessageTo(Authorizer, "executeAuthSequence", oAuth2Client)
     }
     sendMessageTo(oAuth2Client, "setCredentials", token)
+    let error = await sendAsyncMessageTo(File, "writeFile", TOKEN_PATH, JSON.stringify(token))
+    if(error) {
+        return console.error(error)
+    }
     const drive = sendMessageTo(google, "drive", {version: "v3", auth: oAuth2Client})
     let response = await sendAsyncMessageTo(drive.files, "list", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",

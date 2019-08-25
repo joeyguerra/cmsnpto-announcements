@@ -1,6 +1,8 @@
 import express from "express"
 import bodyParser from "body-parser"
+const SCOPES = ["https://www.googleapis.com/auth/drive"]
 const app = express()
+
 app.use(bodyParser.urlencoded({ extended: false }))
   .use((err, req, res, next)=>{
       console.error(err)
@@ -32,4 +34,25 @@ const server = () => {
     return listener
 }
 
-export default server
+const Authorizer = {
+    async executeAuthSequence(oAuth2Client){
+        const listener = server()
+        return new Promise((resolve, reject)=>{
+            const authUrl = oAuth2Client.generateAuthUrl({
+                access_type: "offline",
+                scope: SCOPES,
+            })
+            console.log("Go to URL:", authUrl)
+            process.on("code was received", code => {
+                oAuth2Client.getToken(code, async (err, token) => {
+                    if (err) return reject(err)
+                    console.log("Code was received. Setting credentials.")
+                    resolve(token)
+                    listener.close(()=>console.log("Server stopped"))
+                })
+            })
+        })
+    }
+}
+
+export default Authorizer
