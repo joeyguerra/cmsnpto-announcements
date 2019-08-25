@@ -22,8 +22,10 @@ const GoogleDrive = {
     },
     async isAuthed(){
         let token = null
-        try{ token = await File.readFile(TOKEN_PATH, "utf-8") }
-        catch(e){ }
+        try{
+            token = await File.readFile(TOKEN_PATH, "utf-8")
+            token = JSON.parse(token)
+        } catch(e){ }
         return token
     },
     async executeAuthSequence(oAuth2Client){
@@ -37,45 +39,78 @@ const GoogleDrive = {
                 input: process.stdin,
                 output: process.stdout,
             })
-            rl.question("Enter the code from that page here:", code => {
+            process.on("code was received", code => {
                 rl.close()
                 oAuth2Client.getToken(code, async (err, token) => {
                     if (err) return reject(err)
+                    console.log("Code was received. Setting credentials.")
                     oAuth2Client.setCredentials(token)
                     let error = await File.writeFile(TOKEN_PATH, JSON.stringify(token))
                     if(error) return reject(error)
-                    resolve(JSON.stringify(token))
+                    resolve(token)
                 })
             })
         })
     }
 }
+const MessageNotHandled = (m)=>{
+    return {
+        error: m | "Message Not Handled"
+    }
+}
+function sendMessageTo(obj, selector, ...parameters){
+    if(obj[selector]) return obj[selector](...parameters)
+    else return MessageNotHandled()
+}
+async function sendAsyncMessageTo(obj, selector, ...parameters){
+    if(obj[selector]) return await obj[selector](...parameters)
+    else return MessageNotHandled()
+}
 
+const Arguments = {
+    get(...args){
+        args.shift()
+        args.shift()
+        let params = {}
+        args.forEach(kv=>{
+            const pair = kv.split("=")
+            if(pair[1].trim().length > 0) params[pair[0].replace("--", "")] = pair[1]
+        })
+        return params
+    }
+}
 async function main(args){
-    console.log(args)
-    let credentials = await File.readFile("credentials.json", "utf-8")
+    const params = sendMessageTo(Arguments, "get", ...args)
+    let credentials = await sendAsyncMessageTo(File, "readFile", "credentials.json", "utf-8")
     credentials = JSON.parse(credentials)
     const {client_secret, client_id, redirect_uris} = credentials.web
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
-    let token = await GoogleDrive.isAuthed()
-    if(token == null) {
-        token = await GoogleDrive.executeAuthSequence(oAuth2Client)        
+    let token = await sendAsyncMessageTo(GoogleDrive, "isAuthed")
+    if(token == null || token.expiry_date <= (new Date()).getTime()) {
+        const listener = service()
+        token = await sendAsyncMessageTo(GoogleDrive, "executeAuthSequence", oAuth2Client)
+        listener.close()
     }
-    oAuth2Client.setCredentials(JSON.parse(token))
-    let response = await GoogleDrive.list(oAuth2Client, {q: "name = 'DAILY ANNOUNCEMENTS'",
+    sendMessageTo(oAuth2Client, "setCredentials", token)
+    let response = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
     })
+
     let id = response.data.files[0].id
     let today = new Date()
+    if(params.date){
+        today = new Date(params.date)
+    }
+    console.log(today)
     let folderName = Dates.MONTHS[today.getMonth()]
-    response = await GoogleDrive.list(oAuth2Client, {q: `'${id}' in parents`,
+    response = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: `'${id}' in parents`,
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
     })
-    response = await GoogleDrive.list(oAuth2Client, {q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
+    response = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
@@ -89,7 +124,7 @@ async function main(args){
     let thisWeeksFiles = []
     for(let i = 0; i < days.length; i++) {
         let day = days[i]
-        let filesForDay = await GoogleDrive.list(oAuth2Client, {q: `'${response.data.files.find(f=>f.name == day.month).id}' in parents`,
+        let filesForDay = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: `'${response.data.files.find(f=>f.name == day.month).id}' in parents`,
             corpora: "user",
             fields: "nextPageToken, files(id, name),files/parents",
             pageToken: null
@@ -97,29 +132,28 @@ async function main(args){
         thisWeeksFiles.push({day: day, files: filesForDay.data.files})
     }
     let html = []
+    html.push(`<div style="text-align: left;">`)
     for(let i = 0; i < thisWeeksFiles.length; i++){
         let f = thisWeeksFiles[i]
-        html.push(`<div style="text-align: left;"><p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
+        html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
+        console.log(`Getting ${Dates.DAYS[f.day.day.getDay()]}'s announcements.`)
         for(let k = 0; k < f.files.length; k++){
             let file = f.files[k]
-            let fileMeta = await GoogleDrive.get(oAuth2Client, {
+            let fileMeta = await sendAsyncMessageTo(GoogleDrive, "get", oAuth2Client, {
                 fileId: file.id,
                 mimeType: "text/plain"
             })
+            console.log(`   ${file.name}`)
             html.push("<li>")
-            fileMeta.data.split("\r\n").filter(t=>t.length > 0).map(t=>`<p>${t}</p>`).forEach(t=>html.push(t))
+            fileMeta.data.split("\r\n").filter(t=>t.length > 0).map(t=>`<p>${t.trim()}</p>`).forEach(t=>html.push(t))
             html.push("</li>")
         }
-        html.push("</ul></div>")
+        html.push("</ul>")
     }
+    html.push("</div>")
     console.log(html.join("\r\n"))
-    await File.writeFile("output.html", `<!doctype html><html><head></head><body>${html.join("\r\n")}</body></html>`)
+    await sendAsyncMessageTo(File, "writeFile", "output.html", `<!doctype html><html><head></head><body>${html.join("\r\n")}</body></html>`, {encoding: "UTF-8"})
 }
-service.then(s=>{
-    main(process.argv).then(c=>{
-        process.exit(0)
-    }).catch(e=>console.error(e))
-}).catch(e=>{
-    console.error(e)
-    process.exit(1)
-})
+main(process.argv).then(c=>{
+    process.exit(0)
+}).catch(e=>console.error(e))

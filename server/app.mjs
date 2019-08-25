@@ -14,21 +14,22 @@ app.use(bodyParser.urlencoded({ extended: false }))
   })
   .get("/", (req, res)=>{
       const code = req.query.code
+      process.emit("code was received", code)
       res.send(code)
   })
 
-const server = new Promise((resolve, reject)=>{
+const server = () => {
     const listener = app.listen(8000, () => {
         console.log(`Service istening on port ${listener.address().port}`)
-    })      
+    })
     ;["SIGINT", "SIGTERM"].forEach( sig => {
-        console.log("shutting down")
         process.on(sig, ()=>{
+            console.log("shutting down")
             process.emit("shutting down", sig)
             process.exit()
         })
     })
-    resolve(listener)
-})
+    return listener
+}
 
 export default server
