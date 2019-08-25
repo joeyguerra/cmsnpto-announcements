@@ -53,14 +53,30 @@ async function sendAsyncMessageTo(obj, selector, ...parameters){
 
 const Arguments = {
     parse(...args){
-        args.shift()
-        args.shift()
         let params = {}
+        args.shift()
+        args.shift()
         args.forEach(kv=>{
             const pair = kv.split("=")
             if(pair[1].trim().length > 0) params[pair[0].replace("--", "")] = pair[1]
         })
         return params
+    }
+}
+
+const FileListerInFolder = {
+    async list(drive, folderName, id){
+        let response = await sendAsyncMessageTo(drive.files, "list", {q: `'${id}' in parents`,
+            corpora: "user",
+            fields: "nextPageToken, files(id, name),files/parents",
+            pageToken: null
+        })
+        response = await sendAsyncMessageTo(drive.files, "list", {q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
+            corpora: "user",
+            fields: "nextPageToken, files(id, name),files/parents",
+            pageToken: null
+        })
+        return response
     }
 }
 
@@ -79,7 +95,7 @@ async function main(args){
         token = await sendAsyncMessageTo(Authorizer, "executeAuthSequence", oAuth2Client)
     }
     sendMessageTo(oAuth2Client, "setCredentials", token)
-    const drive = google.drive({version: "v3", auth: oAuth2Client})
+    const drive = sendMessageTo(google, "drive", {version: "v3", auth: oAuth2Client})
     let response = await sendAsyncMessageTo(drive.files, "list", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
@@ -92,16 +108,7 @@ async function main(args){
     }
     console.log(today)
     let folderName = Dates.MONTHS[today.getMonth()]
-    response = await sendAsyncMessageTo(drive.files, "list", {q: `'${id}' in parents`,
-        corpora: "user",
-        fields: "nextPageToken, files(id, name),files/parents",
-        pageToken: null
-    })
-    response = await sendAsyncMessageTo(drive.files, "list", {q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
-        corpora: "user",
-        fields: "nextPageToken, files(id, name),files/parents",
-        pageToken: null
-    })
+    response = await sendAsyncMessageTo(FileListerInFolder, "list", drive, folderName, id)
 
     let days = Dates.weekMondayThurFridayRange(today).map(d => {
         let month = Dates.formatMonthDate(d).toLowerCase()
