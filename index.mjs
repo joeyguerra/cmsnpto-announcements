@@ -11,6 +11,7 @@ const TOKEN_PATH = "token.json"
 
 const Authorizer = {
     async executeAuthSequence(oAuth2Client){
+        const listener = service()
         return new Promise((resolve, reject)=>{
             const authUrl = oAuth2Client.generateAuthUrl({
                 access_type: "offline",
@@ -23,6 +24,7 @@ const Authorizer = {
             })
             process.on("code was received", code => {
                 rl.close()
+                listener.close()
                 oAuth2Client.getToken(code, async (err, token) => {
                     if (err) return reject(err)
                     console.log("Code was received. Setting credentials.")
@@ -74,9 +76,7 @@ async function main(args){
         token = JSON.parse(token)
     } catch(e){ }
     if(token == null || token.expiry_date <= (new Date()).getTime()) {
-        const listener = service()
         token = await sendAsyncMessageTo(Authorizer, "executeAuthSequence", oAuth2Client)
-        listener.close()
     }
     sendMessageTo(oAuth2Client, "setCredentials", token)
     const drive = google.drive({version: "v3", auth: oAuth2Client})
