@@ -50,7 +50,7 @@ async function sendAsyncMessageTo(obj, selector, ...parameters){
 }
 
 const Arguments = {
-    get(...args){
+    parse(...args){
         args.shift()
         args.shift()
         let params = {}
@@ -63,7 +63,7 @@ const Arguments = {
 }
 
 async function main(args){
-    const params = sendMessageTo(Arguments, "get", ...args)
+    const params = sendMessageTo(Arguments, "parse", ...args)
     let credentials = await sendAsyncMessageTo(File, "readFile", "credentials.json", "utf-8")
     credentials = JSON.parse(credentials)
     const {client_secret, client_id, redirect_uris} = credentials.web
