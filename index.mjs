@@ -9,25 +9,7 @@ const SCOPES = ["https://www.googleapis.com/auth/drive"]
 const google = GoogleApis.google
 const TOKEN_PATH = "token.json"
 
-const GoogleDrive = {
-    async list(authClient, options){
-        const drive = google.drive({version: "v3", auth: authClient})
-        const response = await drive.files.list(options)
-        return response
-    },
-    async get(authClient, options){
-        const drive = google.drive({version: "v3", auth: authClient})
-        const response = await drive.files.export(options)
-        return response
-    },
-    async isAuthed(){
-        let token = null
-        try{
-            token = await File.readFile(TOKEN_PATH, "utf-8")
-            token = JSON.parse(token)
-        } catch(e){ }
-        return token
-    },
+const Authorizer = {
     async executeAuthSequence(oAuth2Client){
         return new Promise((resolve, reject)=>{
             const authUrl = oAuth2Client.generateAuthUrl({
@@ -79,25 +61,30 @@ const Arguments = {
         return params
     }
 }
+
 async function main(args){
     const params = sendMessageTo(Arguments, "get", ...args)
     let credentials = await sendAsyncMessageTo(File, "readFile", "credentials.json", "utf-8")
     credentials = JSON.parse(credentials)
     const {client_secret, client_id, redirect_uris} = credentials.web
     const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
-    let token = await sendAsyncMessageTo(GoogleDrive, "isAuthed")
+    let token = null
+    try{
+        token = await sendAsyncMessageTo(File, "readFile", TOKEN_PATH, "utf-8")
+        token = JSON.parse(token)
+    } catch(e){ }
     if(token == null || token.expiry_date <= (new Date()).getTime()) {
         const listener = service()
-        token = await sendAsyncMessageTo(GoogleDrive, "executeAuthSequence", oAuth2Client)
+        token = await sendAsyncMessageTo(Authorizer, "executeAuthSequence", oAuth2Client)
         listener.close()
     }
     sendMessageTo(oAuth2Client, "setCredentials", token)
-    let response = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: "name = 'DAILY ANNOUNCEMENTS'",
+    const drive = google.drive({version: "v3", auth: oAuth2Client})
+    let response = await sendAsyncMessageTo(drive.files, "list", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
     })
-
     let id = response.data.files[0].id
     let today = new Date()
     if(params.date){
@@ -105,12 +92,12 @@ async function main(args){
     }
     console.log(today)
     let folderName = Dates.MONTHS[today.getMonth()]
-    response = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: `'${id}' in parents`,
+    response = await sendAsyncMessageTo(drive.files, "list", {q: `'${id}' in parents`,
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
     })
-    response = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
+    response = await sendAsyncMessageTo(drive.files, "list", {q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
@@ -124,7 +111,7 @@ async function main(args){
     let thisWeeksFiles = []
     for(let i = 0; i < days.length; i++) {
         let day = days[i]
-        let filesForDay = await sendAsyncMessageTo(GoogleDrive, "list", oAuth2Client, {q: `'${response.data.files.find(f=>f.name == day.month).id}' in parents`,
+        let filesForDay = await sendAsyncMessageTo(drive.files, "list", {q: `'${response.data.files.find(f=>f.name == day.month).id}' in parents`,
             corpora: "user",
             fields: "nextPageToken, files(id, name),files/parents",
             pageToken: null
@@ -139,7 +126,7 @@ async function main(args){
         console.log(`Getting ${Dates.DAYS[f.day.day.getDay()]}'s announcements.`)
         for(let k = 0; k < f.files.length; k++){
             let file = f.files[k]
-            let fileMeta = await sendAsyncMessageTo(GoogleDrive, "get", oAuth2Client, {
+            let fileMeta = await sendAsyncMessageTo(drive.files, "export", {
                 fileId: file.id,
                 mimeType: "text/plain"
             })
