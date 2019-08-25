@@ -2,41 +2,13 @@ import GoogleApis from "googleapis"
 import fs from "fs"
 import Dates from "./lib/Dates.mjs"
 import Authorizer from "./Authorizer.mjs"
-import MessagePassing from "./lib/MessagePassing.mjs"
+import {MessageNotHandled, sendMessageTo, sendAsyncMessageTo} from "./lib/MessagePassing.mjs"
+import Arguments from "./lib/Arguments.mjs"
+import FileListerInFolder from "./lib/FileListerInFolder.mjs"
 const TOKEN_PATH = "token.json"
-const {MessageNotHandled, sendMessageTo, sendAsyncMessageTo} = MessagePassing
-
 const File = fs.promises
 const google = GoogleApis.google
 
-const Arguments = {
-    parse(...args){
-        let params = {}
-        args.shift()
-        args.shift()
-        args.forEach(kv=>{
-            const pair = kv.split("=")
-            if(pair[1].trim().length > 0) params[pair[0].replace("--", "")] = pair[1]
-        })
-        return params
-    }
-}
-
-const FileListerInFolder = {
-    async list(drive, folderName, id){
-        let response = await sendAsyncMessageTo(drive.files, "list", {q: `'${id}' in parents`,
-            corpora: "user",
-            fields: "nextPageToken, files(id, name),files/parents",
-            pageToken: null
-        })
-        response = await sendAsyncMessageTo(drive.files, "list", {q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
-            corpora: "user",
-            fields: "nextPageToken, files(id, name),files/parents",
-            pageToken: null
-        })
-        return response
-    }
-}
 
 async function main(args){
     const params = sendMessageTo(Arguments, "parse", ...args)

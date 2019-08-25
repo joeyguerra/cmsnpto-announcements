@@ -1,9 +1,8 @@
 import Authorizer from "./Authorizer.mjs"
 import GoogleApis from "googleapis"
 import fs from "fs"
-import MessagePassing from "./lib/MessagePassing.mjs"
+import {sendAsyncMessageTo} from "./lib/MessagePassing.mjs"
 const TOKEN_PATH = "token.json"
-const {MessageNotHandled, sendMessageTo, sendAsyncMessageTo} = MessagePassing
 const File = fs.promises
 const google = GoogleApis.google
 
