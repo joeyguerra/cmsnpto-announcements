@@ -6,6 +6,9 @@ import {sendMessageTo, sendAsyncMessageTo} from "./lib/MessagePassing.mjs"
 import Arguments from "./lib/Arguments.mjs"
 import FileListerInFolder from "./lib/FileListerInFolder.mjs"
 import GoogleDrive from "./lib/GoogleDrive.mjs"
+import MarkDownIt from "markdown-it"
+
+const md = new MarkDownIt({breaks: true})
 const File = fs.promises
 const google = GoogleApis.google
 
@@ -36,9 +39,10 @@ async function main(args){
     let thisWeeksFiles = []
     for(let i = 0; i < days.length; i++) {
         let day = days[i]
-        let filesForDay = await sendAsyncMessageTo(drive.files, "list", {q: `'${response.data.files.find(f=>f.name == day.month).id}' in parents`,
+        let folderId = response.data.files.find(f=>f.name == day.month).id
+        let filesForDay = await sendAsyncMessageTo(drive.files, "list", {q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.document'`,
             corpora: "user",
-            fields: "nextPageToken, files(id, name),files/parents",
+            fields: "nextPageToken, files(id, name, mimeType),files/parents",
             pageToken: null
         })
         thisWeeksFiles.push({day: day, files: filesForDay.data.files})
@@ -55,16 +59,20 @@ async function main(args){
                 fileId: file.id,
                 mimeType: "text/plain"
             })
-            console.log(`   ${file.name}`)
+            console.log(`   ${file.name} - ${file.mimeType}`)
             html.push("<li>")
-            fileMeta.data.split("\r\n").filter(t=>t.length > 0).map(t=>`<p>${t.trim()}</p>`).forEach(t=>html.push(t))
+            html.push(md.render(fileMeta.data))
             html.push("</li>")
         }
         html.push("</ul>")
     }
     html.push("</div>")
     console.log(html.join("\r\n"))
-    await sendAsyncMessageTo(File, "writeFile", "output.html", `<!doctype html><html><head></head><body>${html.join("\r\n")}</body></html>`, {encoding: "UTF-8"})
+    /* Only if you want to have a valid full html doc.
+    html.unshift(`<!doctype html><html><head></head><body>`)
+    html.push(`</body></html>`)
+    */
+    await sendAsyncMessageTo(File, "writeFile", "output.html", `${html.join("\r\n")}`, {encoding: "ascii"})
 }
 
 main(process.argv).then(c=>{
