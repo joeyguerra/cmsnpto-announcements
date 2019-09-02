@@ -5,6 +5,7 @@ import GoogleDriveMachine from "./GoogleDriveMachine.mjs"
 import Arguments from "./lib/Arguments.mjs"
 import MarkDownIt from "markdown-it"
 import assert from "assert"
+import MakeObservable from "./lib/MakeObservable.mjs"
 
 /*
 TODO: I'm exploring the idea of boundaries and making them explicit in the code. Using the concept of a 
@@ -41,35 +42,40 @@ to write self documenting code. The rule is explicitly asserted in code.
 const september = findAFolderForThisDay({day: 3, month: "SEPTEMBER 3"}, [{name: "September 3"}])
 assert.ok(september != null)
 
+const model = MakeObservable({
+    credentials: null,
+    client: null,
+    drive: null,
+    days: [],
+    html: []
+})
+model.observe("drive", (key, old, v)=>{
+    console.log("Drive was initialized")
+})
+
 async function main(args){
-    let credentialsData = await Machine.sendAsync(File, "readFile", "credentials.json", "utf-8")
-    let credentials = JSON.parse(credentialsData)
-    let client = await Machine.sendAsync(GoogleAuthMachine, "init", credentials)
-    Machine.send(GoogleDriveMachine, "init", client)
-    let response = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: "name = 'DAILY ANNOUNCEMENTS'",
+    model.credentials = JSON.parse(await Machine.sendAsync(File, "readFile", "credentials.json", "utf-8"))
+    model.client = await Machine.sendAsync(GoogleAuthMachine, "init", model.credentials)
+    model.drive = Machine.send(GoogleDriveMachine, "init", model.client)
+    const dailyAnnouncements = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
     })
-    let id = response.data.files[0].id
-    let today = new Date()
+    const folderId = dailyAnnouncements.data.files[0].id
     const params = Machine.send(Arguments, "parse", ...args)
-    if(params.date){
-        today = new Date(params.date)
-    }
-    console.log(today)
-    let folderName = Dates.MONTHS[today.getMonth()]
-    response = await Machine.sendAsync(GoogleDriveMachine, "listFiles", folderName, id)
-
-    let days = Dates.weekMondayThruFridayRange(today).map(d => {
+    const today = params.date ? new Date(params.date) : new Date()
+    const thisMonth = Dates.MONTHS[today.getMonth()]
+    const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, folderId)
+    model.days = Dates.weekMondayThruFridayRange(today).map(d => {
         let month = Dates.formatMonthDate(d).toLowerCase()
         month = `${month.charAt(0).toUpperCase()}${month.slice(1)}`
         return {day: d, month}
     })
-    let thisWeeksFiles = []
-    for(let i = 0; i < days.length; i++) {
-        let day = days[i]
-        let folder = findAFolderForThisDay(day, response.data.files)
+    const thisWeeksFiles = []
+    for(let i = 0; i < model.days.length; i++) {
+        let day = model.days[i]
+        let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)
         if(!folder) continue
         let folderId = folder.id
         let filesForDay = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.document'`,
@@ -79,11 +85,10 @@ async function main(args){
         })
         thisWeeksFiles.push({day: day, files: filesForDay.data.files})
     }
-    let html = []
-    html.push(`<div style="text-align: left;">`)
+    model.html.push(`<div style="text-align: left;">`)
     for(let i = 0; i < thisWeeksFiles.length; i++){
         let f = thisWeeksFiles[i]
-        html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
+        model.html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
         console.log(`Getting ${Dates.DAYS[f.day.day.getDay()]}'s announcements.`)
         for(let k = 0; k < f.files.length; k++){
             let file = f.files[k]
@@ -92,19 +97,19 @@ async function main(args){
                 mimeType: "text/plain"
             })
             console.log(`   ${file.name} - ${file.mimeType}`)
-            html.push("<li>")
-            html.push(md.render(fileMeta.data))
-            html.push("</li>")
+            model.html.push("<li>")
+            model.html.push(md.render(fileMeta.data))
+            model.html.push("</li>")
         }
-        html.push("</ul>")
+        model.html.push("</ul>")
     }
-    html.push("</div>")
-    console.log(html.join("\r\n"))
+    model.html.push("</div>")
+    console.log(model.html.join("\r\n"))
     /* Only if you want to have a valid full html doc.
     html.unshift(`<!doctype html><html><head></head><body>`)
     html.push(`</body></html>`)
     */
-    await Machine.sendAsync(File, "writeFile", "output.html", `${html.join("\r\n")}`, {encoding: "ascii"})
+    await Machine.sendAsync(File, "writeFile", "output.html", `${model.html.join("\r\n")}`, {encoding: "ascii"})
 }
 
 main(process.argv).then(c=>{
