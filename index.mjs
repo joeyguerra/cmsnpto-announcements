@@ -1,11 +1,10 @@
 import GoogleApis from "googleapis"
 import fs from "fs"
 import Dates from "./lib/Dates.mjs"
-import Authorizer from "./Authorizer.mjs"
+import GoogleAuthMachine from "./GoogleAuthMachine.mjs"
 import Arguments from "./lib/Arguments.mjs"
 import MarkDownIt from "markdown-it"
 import assert from "assert"
-
 
 /*
 TODO: I'm exploring the idea of boundaries and making them explicit in the code. Using the concept of a 
@@ -28,35 +27,6 @@ const Machine = {
 const md = new MarkDownIt({breaks: true})
 const File = fs.promises
 const google = GoogleApis.google
-
-const GoogleAuthMachine = ()=>{
-    const TOKEN_PATH = "token.json"
-    let credentials = null
-    let token = null
-    let client = null
-    const api = {
-        async init(creds){
-            credentials = creds
-            const {client_secret, client_id, redirect_uris} = credentials.web
-            client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
-            let tokenData = null
-            try{
-                tokenData = await File.readFile(TOKEN_PATH, "utf-8")
-                token = JSON.parse(tokenData)
-            }catch(e){}
-            if(token == null || token.expiry_date <= (new Date()).getTime()) {
-                token = await Authorizer.executeAuthSequence(client)
-            }
-            client.setCredentials(token)
-            let error = await File.writeFile(TOKEN_PATH, JSON.stringify(token))
-            if(error) {
-                return console.error(error)
-            }
-            return client    
-        }
-    }
-    return api
-}
 
 const GoogleDriveMachine = ()=>{
     let client = null
@@ -109,7 +79,7 @@ assert.ok(september != null)
 async function main(args){
     let credentialsData = await Machine.sendAsync(File, "readFile", "credentials.json", "utf-8")
     let credentials = JSON.parse(credentialsData)
-    let client = await GoogleAuthMachine().init(credentials)
+    let client = await GoogleAuthMachine(credentials).init()
     let drive = GoogleDriveMachine().init(client)
     let response = await Machine.sendAsync(drive, "listFolders", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
