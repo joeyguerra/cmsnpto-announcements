@@ -1,7 +1,7 @@
-import GoogleApis from "googleapis"
 import fs from "fs"
 import Dates from "./lib/Dates.mjs"
 import GoogleAuthMachine from "./GoogleAuthMachine.mjs"
+import GoogleDriveMachine from "./GoogleDriveMachine.mjs"
 import Arguments from "./lib/Arguments.mjs"
 import MarkDownIt from "markdown-it"
 import assert from "assert"
@@ -26,41 +26,6 @@ const Machine = {
 
 const md = new MarkDownIt({breaks: true})
 const File = fs.promises
-const google = GoogleApis.google
-
-const GoogleDriveMachine = ()=>{
-    let client = null
-    let drive = null
-    const api = {
-        init(c){
-            if(!c) return null
-            client = c
-            drive = google.drive({version: "v3", auth: client})
-            return api
-        },
-        async listFolders(query){
-            return drive.files.list(query)
-        },
-        async export(query){
-            return drive.files.export(query)
-        },
-        async listFiles(folderName, id){
-            let response = await drive.files.list({q: `'${id}' in parents`,
-                corpora: "user",
-                fields: "nextPageToken, files(id, name),files/parents",
-                pageToken: null
-            })
-            response = await drive.files.list({q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
-                corpora: "user",
-                fields: "nextPageToken, files(id, name),files/parents",
-                pageToken: null
-            })
-            return response
-        }
-    
-    }
-    return api
-}
 
 // This is an "self documenting code" example where the funciton name conveys a rule.
 const findAFolderForThisDay = (day, files)=>{
@@ -80,7 +45,7 @@ async function main(args){
     let credentialsData = await Machine.sendAsync(File, "readFile", "credentials.json", "utf-8")
     let credentials = JSON.parse(credentialsData)
     let client = await GoogleAuthMachine(credentials).init()
-    let drive = GoogleDriveMachine().init(client)
+    let drive = GoogleDriveMachine(client).init()
     let response = await Machine.sendAsync(drive, "listFolders", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
