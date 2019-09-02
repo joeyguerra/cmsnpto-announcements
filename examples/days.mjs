@@ -68,14 +68,14 @@ tap.test("Monday - friday changing months", t => {
 
 tap.test("Monday - friday just the days", t => {
     let today = new Date(2019, 8, 30, 0, 0, 0)
-    let days = Dates.weekMondayThurFridayRange(today)
+    let days = Dates.weekMondayThruFridayRange(today)
     t.equal(days[0].getDate(), 30)
     t.end()
 })
 
 tap.test("Get a list of MONTH DAY", t => {
     let today = new Date(2019, 8, 30, 0, 0, 0)
-    let days = Dates.weekMondayThurFridayRange(today)
+    let days = Dates.weekMondayThruFridayRange(today)
     days.forEach(d => {
         t.equal(Dates.formatMonthDate(d), `${Dates.MONTHS[d.getMonth()]} ${d.getDate()}`)
     })

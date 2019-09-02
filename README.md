@@ -7,7 +7,7 @@ The Coppell North Middle School PTO emails the school announcements to parents w
 
 ## Requirements
 
-You'll need NodeJS. This app is writing in Javascript, targeting the NodeJS runtime. I like to be able to quickly switch to different NodeJS versions. So I use [nvm](https://github.com/nvm-sh/nvm) to manage my NodeJS versions. I developed this program using version `v12.6.0`.
+You'll need NodeJS. This app is written in Javascript, targeting the NodeJS runtime. I like to be able to quickly switch to different NodeJS versions. So I use [nvm](https://github.com/nvm-sh/nvm) to manage my NodeJS versions. I developed this program using version `v12.6.0`.
 
 ## Setup
 
@@ -27,6 +27,6 @@ Third step is to authenticate with Google.
 npm start
 ```
 
-When you run `npm start` in your terminal, you'll see a URL. Enter that URL into your browser's URL field and hit `return`. Then, when you see the "code" on the page, copy that and paste it into the terminal and hit `return`. That's only required once (you should see a file called `token.json` now). Subsequent executions shouldn't require you to enter an authentication code.
+When you run `npm start` in your terminal, you'll see a URL. Enter that URL into your browser's URL field and hit `return`. The program will start a web server which will intercept the HTTP redirect from Google's OAuth sequence, capture the `code` and write it in a file called `token.json`. Subsequent executions shouldn't require you to enter an authentication code until that `Token` expires.
 
 The output of the program will be a text file called `output.html` in the app directory. You can open that up and copy and paste the raw HTML into a newsletter. Then fiddle with it if you need to before sending it.
