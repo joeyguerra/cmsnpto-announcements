@@ -44,9 +44,9 @@ assert.ok(september != null)
 async function main(args){
     let credentialsData = await Machine.sendAsync(File, "readFile", "credentials.json", "utf-8")
     let credentials = JSON.parse(credentialsData)
-    let client = await GoogleAuthMachine(credentials).init()
-    let drive = GoogleDriveMachine(client).init()
-    let response = await Machine.sendAsync(drive, "listFolders", {q: "name = 'DAILY ANNOUNCEMENTS'",
+    let client = await Machine.sendAsync(GoogleAuthMachine, "init", credentials)
+    Machine.send(GoogleDriveMachine, "init", client)
+    let response = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: "name = 'DAILY ANNOUNCEMENTS'",
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
@@ -59,7 +59,7 @@ async function main(args){
     }
     console.log(today)
     let folderName = Dates.MONTHS[today.getMonth()]
-    response = await Machine.sendAsync(drive, "listFiles", folderName, id)
+    response = await Machine.sendAsync(GoogleDriveMachine, "listFiles", folderName, id)
 
     let days = Dates.weekMondayThruFridayRange(today).map(d => {
         let month = Dates.formatMonthDate(d).toLowerCase()
@@ -72,7 +72,7 @@ async function main(args){
         let folder = findAFolderForThisDay(day, response.data.files)
         if(!folder) continue
         let folderId = folder.id
-        let filesForDay = await Machine.sendAsync(drive, "listFolders", {q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.document'`,
+        let filesForDay = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.document'`,
             corpora: "user",
             fields: "nextPageToken, files(id, name, mimeType),files/parents",
             pageToken: null
@@ -87,7 +87,7 @@ async function main(args){
         console.log(`Getting ${Dates.DAYS[f.day.day.getDay()]}'s announcements.`)
         for(let k = 0; k < f.files.length; k++){
             let file = f.files[k]
-            let fileMeta = await Machine.sendAsync(drive, "export", {
+            let fileMeta = await Machine.sendAsync(GoogleDriveMachine, "export", {
                 fileId: file.id,
                 mimeType: "text/plain"
             })
