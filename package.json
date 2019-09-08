@@ -8,12 +8,15 @@
     "start:dev": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules index.mjs",
     "test": "env $(cat .env | grep -v \"#\" | xargs -0) tap examples/**/*.mjs",
     "test:local": "env $(cat .env | grep -v \"#\" | xargs -0) tap -w",
-    "authorize": "node --experimental-modules authorize.mjs"
+    "authorize": "node --experimental-modules authorize.mjs",
+    "login": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules login.mjs"
   },
   "author": "Joey Guerra",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "cheerio": "^1.0.0-rc.3",
+    "cookie": "^0.4.0",
     "express": "^4.17.1",
     "googleapis": "^39.2.0",
     "markdown-it": "^9.1.0"

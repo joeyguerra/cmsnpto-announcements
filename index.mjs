@@ -6,24 +6,7 @@ import Arguments from "./lib/Arguments.mjs"
 import MarkDownIt from "markdown-it"
 import assert from "assert"
 import MakeObservable from "./lib/MakeObservable.mjs"
-
-/*
-TODO: I'm exploring the idea of boundaries and making them explicit in the code. Using the concept of a 
-"machine" to define a boundary with the communication strategy of sending messages to machines.
-*/
-const Machine = {
-    async sendAsync(obj, method, ...args){
-        if(obj[method]) return await obj[method](...args)
-        return new Promise((resolve, reject)=>{resolve(null)})
-    },
-    send(obj, method, ...args){
-        if(obj[method]) return obj[method](...args)
-        return null
-    },
-    broadcast(obj, method, ...args){
-        if(obj[method]) obj[method](...args)
-    }
-}
+import Machine from "./lib/Machine.mjs"
 
 const md = new MarkDownIt({breaks: true})
 const File = fs.promises
@@ -46,8 +29,9 @@ const model = MakeObservable({
     credentials: null,
     client: null,
     drive: null,
-    days: [],
-    html: []
+    weekDays: [],
+    html: [],
+    dailyAnnouncementsFolderId: null
 })
 model.observe("drive", (key, old, v)=>{
     console.log("Drive was initialized")
@@ -62,19 +46,19 @@ async function main(args){
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
     })
-    const folderId = dailyAnnouncements.data.files[0].id
+    model.dailyAnnouncementsFolderId = dailyAnnouncements.data.files[0].id
     const params = Machine.send(Arguments, "parse", ...args)
     const today = params.date ? new Date(params.date) : new Date()
     const thisMonth = Dates.MONTHS[today.getMonth()]
-    const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, folderId)
-    model.days = Dates.weekMondayThruFridayRange(today).map(d => {
+    const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
+    model.weekDays = Dates.weekMondayThruFridayRange(today).map(d => {
         let month = Dates.formatMonthDate(d).toLowerCase()
         month = `${month.charAt(0).toUpperCase()}${month.slice(1)}`
         return {day: d, month}
     })
     const thisWeeksFiles = []
-    for(let i = 0; i < model.days.length; i++) {
-        let day = model.days[i]
+    for(let i = 0; i < model.weekDays.length; i++) {
+        let day = model.weekDays[i]
         let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)
         if(!folder) continue
         let folderId = folder.id
