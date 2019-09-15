@@ -6,6 +6,7 @@ import Url from "url"
 import Arguments from "./lib/Arguments.mjs"
 import Machine from "./lib/Machine.mjs"
 import cheerio from "cheerio"
+import querystring from "querystring"
 
 const config = {
     email: process.env.email,
@@ -39,7 +40,8 @@ const MtkMachine = MakeObservable({
             }
         }
         const params = Machine.send(Arguments, "parseNp", ...args)
-        const html = await Machine.sendAsync(MtkMachine, "listSentNewsletters", null)
+        const sentNewsLetters = await Machine.sendAsync(MtkMachine, "listSentNewsletters", null)
+        const response = await Machine.sendAsync(MtkMachine, "duplicateNewsletter", sentNewsLetters[0])
     },
     async done(){
         console.log("logged in")
@@ -83,13 +85,82 @@ const MtkMachine = MakeObservable({
         let response = await Machine.sendAsync(MtkMachine, "get", "https://cmsnpto.membershiptoolkit.com/dashboard/newsletters/sent")
         const $ = cheerio.load(response.body)
         const list = []
-        $(".dashboard-summary table tr td:nth-child(2)").each((i, n)=>{
-            const t = $(n).text()
-            if(t.indexOf("Student Announcements") > -1) list.push(t)
+        $(".dashboard-summary table tr").each((i, n)=>{
+            const newsLeter = {
+                id: $("td:first-child input", n).attr("value"),
+                name: $("td:nth-child(2) a", n).text(),
+                link: $("td:nth-child(2) a", n).attr("href")
+            }
+            if(newsLeter.name.indexOf("Student Announcements") > -1) list.push(newsLeter)
         })
+        return list
+    },
+    async duplicateNewsletter(newsLetter){
+        const data = await Machine.sendAsync(File, "readFile", "output.html", "utf-8")
+        let response = await Machine.sendAsync(MtkMachine, "post", newsLetter.link, `action=duplicate`)
+        const url = Url.parse(response.res.headers.location)
+        response = await Machine.sendAsync(MtkMachine, "get", url.href)
+        const $ = cheerio.load(response.body)
+        const id = url.href.split("/").pop()
+        const form = $("#edit_newsletter_form")
+        const newsLetterBody = $("#mtk-newsletter-editor-body")
+        const list_ids = []
+        $("[name='list_id[]']:checked", form).each((i, listId)=>{
+            list_ids.push($(listId).attr("value"))
+        })
+        const from_email_name = $("[name='from_email_name']", form).attr("value")
+        const from_email = $("[name='from_email']", form).attr("value")
+        //const subject = $("[name='subject']", form).attr("value")
+        const scheduled_datetime = $("[name='scheduled_datetime']", form).attr("value")
+        const today = new Date()
+        const params = {command: "savenlsettings", id, list_ids, from_email, from_email_name, subject: `CMSN Student Announcements - ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`}
+        response = await Machine.sendAsync(MtkMachine, "post", `${url.protocol}//${url.hostname}/gateway`, querystring.stringify(params))
+        let letter = {
+            id: id,
+            option: "save"
+        }
+        if(data.code){
+            console.error(data)
+        } else {
+            $("#mail-body td:nth-child(2) table tr:nth-child(2) td div.mtk-editable", newsLetterBody).html(data)
+            letter.body = newsLetterBody.html()
+        }
+        response = await Machine.sendAsync(MtkMachine, "post", `${url.protocol}//${url.hostname}/dashboard/newsletters/edit2/${letter.id}`,
+`------WebKitFormBoundarygVfmXWoqCWgGd8Ki
+Content-Disposition: form-data; name="id"
 
-        console.log(list)
-        return response.body
+${letter.id}
+------WebKitFormBoundarygVfmXWoqCWgGd8Ki
+Content-Disposition: form-data; name="option"
+
+${letter.option}
+------WebKitFormBoundarygVfmXWoqCWgGd8Ki
+Content-Disposition: form-data; name="body"
+
+${letter.body}
+
+------WebKitFormBoundarygVfmXWoqCWgGd8Ki--`, {"Content-Type":"multipart/form-data; boundary=----WebKitFormBoundarygVfmXWoqCWgGd8Ki", "Referer":`${url.protocol}//${url.hostname}/dashboard/newsletters/edit2/${letter.id}`})
+        console.log(response.res.statusCode, response.body)
+   },
+    async post(url, data, headers = {"Content-Type": "application/x-www-form-urlencoded"}){
+        return new Promise((resolve, reject)=>{
+            const u = Url.parse(url)
+            const req = https.request({
+                hostname: u.hostname,
+                path: u.pathname,
+                method: "POST",
+                headers: Object.assign(MtkMachine.headers, headers)
+            }, res => {
+                let buffer = []
+                res.setEncoding("utf-8")
+                res.on("data", chunk => buffer.push(chunk))
+                res.on("error", e=>reject({res, error: e}))
+                res.on("end", ()=>resolve({res, body: buffer.join("\r\n")}))
+            })
+            req.on("error", e=>reject(e))
+            req.write(data)
+            req.end()
+        })
     },
     async get(url){
         return new Promise((resolve, reject)=>{
