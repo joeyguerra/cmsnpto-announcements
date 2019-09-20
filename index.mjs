@@ -13,7 +13,7 @@ const File = fs.promises
 
 // This is an "self documenting code" example where the funciton name conveys a rule.
 const findAFolderForThisDay = (day, files)=>{
-    return files.find(f=>f.name.toLowerCase() == day.month.toLowerCase())
+    return files.find(f=>f.name.trim().toLowerCase() == day.month.toLowerCase())
 }
 
 /*
@@ -34,7 +34,7 @@ const model = MakeObservable({
     dailyAnnouncementsFolderId: null
 })
 model.observe("drive", (key, old, v)=>{
-    console.log("Drive was initialized")
+    console.log("Drive object was initialized")
 })
 
 async function main(args){
@@ -51,7 +51,7 @@ async function main(args){
     const today = params.date ? new Date(params.date) : new Date()
     const thisMonth = Dates.MONTHS[today.getMonth()]
     const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
-    model.weekDays = Dates.weekMondayThruFridayRange(today).map(d => {
+    model.weekDays = Dates.startDayThruFridayRange(today).map(d => {
         let month = Dates.formatMonthDate(d).toLowerCase()
         month = `${month.charAt(0).toUpperCase()}${month.slice(1)}`
         return {day: d, month}
@@ -62,7 +62,7 @@ async function main(args){
         let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)
         if(!folder) continue
         let folderId = folder.id
-        let filesForDay = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.document'`,
+        let filesForDay = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `'${folderId}' in parents`, // and mimeType='application/vnd.google-apps.document'
             corpora: "user",
             fields: "nextPageToken, files(id, name, mimeType),files/parents",
             pageToken: null
@@ -82,7 +82,11 @@ async function main(args){
             })
             console.log(`   ${file.name} - ${file.mimeType}`)
             model.html.push("<li>")
-            model.html.push(md.render(fileMeta.data))
+            try{
+                model.html.push(md.render(fileMeta.data))
+            }catch(e){
+                console.error("**************ERROR", e, fileMeta)
+            }
             model.html.push("</li>")
         }
         model.html.push("</ul>")

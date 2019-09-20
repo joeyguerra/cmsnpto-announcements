@@ -9,7 +9,7 @@
     "test": "env $(cat .env | grep -v \"#\" | xargs -0) tap examples/**/*.mjs",
     "test:local": "env $(cat .env | grep -v \"#\" | xargs -0) tap -w",
     "authorize": "node --experimental-modules authorize.mjs",
-    "login": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules login.mjs"
+    "duplicate": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules duplicateNewsletter.mjs"
   },
   "author": "Joey Guerra",
   "license": "ISC",

@@ -81,3 +81,12 @@ tap.test("Get a list of MONTH DAY", t => {
     })
     t.end()
 })
+tap.test("Wednesday - should be wednesday through friday", t => {
+    let today = new Date(2019, 8, 18)
+    let days = Dates.startDayThruFridayRange(today)
+    t.equal(days[0].getDate(), 18)
+    t.equal(days[1].getDate(), 19)
+    t.equal(days[2].getDate(), 20)
+    console.log(days)
+    t.end()
+})
