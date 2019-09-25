@@ -1,0 +1,38 @@
+format_version: 3
+pipelines:
+  My-New-Pipeline:
+    group: My-Pipelines
+    label_template: ${COUNT}
+    lock_behavior: none
+    display_order: -1
+    materials:
+      git:
+        git: https://github.com/joeyguerra/mymvc.git
+        shallow_clone: false
+        auto_update: true
+        branch: master
+    stages:
+    - build:
+        fetch_materials: true
+        keep_artifacts: false
+        clean_workspace: false
+        approval:
+          type: success
+          allow_only_on_success: false
+        jobs:
+          compile:
+            timeout: 0
+            tasks:
+            - exec:
+                arguments:
+                - run
+                - build
+                command: npm
+                run_if: passed
+            - exec:
+                arguments:
+                - test
+                command: npm
+                run_if: passed
+    parameters:
+      myname: joey

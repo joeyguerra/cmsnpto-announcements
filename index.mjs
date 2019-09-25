@@ -7,6 +7,7 @@ import MarkDownIt from "markdown-it"
 import assert from "assert"
 import MakeObservable from "./lib/MakeObservable.mjs"
 import Machine from "./lib/Machine.mjs"
+import cheerio from "cheerio"
 
 const md = new MarkDownIt({breaks: true})
 const File = fs.promises
@@ -78,12 +79,15 @@ async function main(args){
             let file = f.files[k]
             let fileMeta = await Machine.sendAsync(GoogleDriveMachine, "export", {
                 fileId: file.id,
-                mimeType: "text/plain"
+                mimeType: "text/html"
             })
             console.log(`   ${file.name} - ${file.mimeType}`)
             model.html.push("<li>")
             try{
-                model.html.push(md.render(fileMeta.data))
+                //model.html.push(md.render(fileMeta.data))
+                const $ = cheerio.load(fileMeta.data)
+                console.log()
+                model.html.push(fileMeta.data)
             }catch(e){
                 console.error("**************ERROR", e, fileMeta)
             }
