@@ -63,7 +63,7 @@ async function main(args){
         let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)
         if(!folder) continue
         let folderId = folder.id
-        let filesForDay = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `'${folderId}' in parents`, // and mimeType='application/vnd.google-apps.document'
+        let filesForDay = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.document'`,
             corpora: "user",
             fields: "nextPageToken, files(id, name, mimeType),files/parents",
             pageToken: null
@@ -79,15 +79,12 @@ async function main(args){
             let file = f.files[k]
             let fileMeta = await Machine.sendAsync(GoogleDriveMachine, "export", {
                 fileId: file.id,
-                mimeType: "text/html"
+                mimeType: "text/plain"
             })
             console.log(`   ${file.name} - ${file.mimeType}`)
             model.html.push("<li>")
             try{
-                //model.html.push(md.render(fileMeta.data))
-                const $ = cheerio.load(fileMeta.data)
-                console.log()
-                model.html.push(fileMeta.data)
+                model.html.push(md.render(fileMeta.data))
             }catch(e){
                 console.error("**************ERROR", e, fileMeta)
             }
