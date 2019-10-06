@@ -35,7 +35,7 @@ const MtkMachine = MakeObservable({
         if(MtkMachine.cookie.length == 0){
             let res = await Machine.sendAsync(MtkMachine, "login", "https://cmsnpto.membershiptoolkit.com/login", "done")
             if(res){
-                console.error(res)
+                console.error("error occurred", res)
                 return process.exit(1)
             }
         }
@@ -47,6 +47,7 @@ const MtkMachine = MakeObservable({
         console.log("logged in")
     },
     async login(url, method){
+        if(!config.email) throw new Error("Make sure there's a .env file with email and password")
         return new Promise((resolve, reject)=>{
             const u = Url.parse(url)
             const options = {
@@ -62,11 +63,11 @@ const MtkMachine = MakeObservable({
                 res.setEncoding("utf-8")
                 const data = []
                 res.on("data", chunk=>data.push(chunk))
-                res.on("error", e=>console.error(e))
+                res.on("error", e=>console.error("error on response", e))
                 res.on("end", async ()=>{
                     const $ = cheerio.load(data.join("\n"))
                     if(!res.headers.location){
-                        reject({error: {message: $(".alert-error").text()}})
+                        reject({error: {message: $(".alert-error").text(), statusCode: res.statusCode }})
                     } else {
                         MtkMachine.headers.Cookie = res.headers["set-cookie"]
                         MtkMachine.cookie = MtkMachine.headers.Cookie.map(c=>cookie.parse(c))
@@ -76,7 +77,7 @@ const MtkMachine = MakeObservable({
                     }
                 })
             })
-            req.on("error", e=>console.error(e))
+            req.on("error", e=>console.error("error from https request to ", url, e))
             req.write(`email=${config.email}&password=${config.password}`)
             req.end()    
         })
@@ -183,4 +184,4 @@ ${letter.body}
     }
 })
 
-MtkMachine.start(process.argv).then().catch(e=>console.error(e))
+export default MtkMachine
