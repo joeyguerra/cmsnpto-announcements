@@ -48,6 +48,7 @@ async function main(args){
     })
     model.dailyAnnouncementsFolderId = dailyAnnouncements.data.files[0].id
     const params = Machine.send(Arguments, "parse", ...args)
+    console.log(params)
     const today = params.date ? new Date(params.date) : new Date()
     const thisMonth = Dates.MONTHS[today.getMonth()]
     const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
@@ -92,12 +93,14 @@ async function main(args){
         model.html.push("</ul>")
     }
     model.html.push("</div>")
-    console.log(model.html.join("\r\n"))
+    let emailBody = model.html.join("\r\n")
     /* Only if you want to have a valid full html doc.
     html.unshift(`<!doctype html><html><head></head><body>`)
     html.push(`</body></html>`)
     */
-    await Machine.sendAsync(File, "writeFile", "output.html", `${model.html.join("\r\n")}`, {encoding: "ascii"})
+
+   emailBody = emailBody.replace("Vadiapatia", "Vadlapatla")
+    await Machine.sendAsync(File, "writeFile", "output.html", emailBody, {encoding: "ascii"})
 }
 
 export default main
