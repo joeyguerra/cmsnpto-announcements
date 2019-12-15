@@ -2,7 +2,7 @@
   "name": "school-announcements",
   "version": "1.0.0",
   "description": "Automate PTO stuff for Coppell North",
-  "repository":"https://github.com/joeyguerra/cmsnpto-announcements.git",
+  "repository": "https://github.com/joeyguerra/cmsnpto-announcements.git",
   "main": "index.js",
   "scripts": {
     "start": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules index.mjs",
