@@ -34,7 +34,7 @@ const model = MakeObservable({
     dailyAnnouncementsFolderId: null
 })
 model.observe("drive", (key, old, v)=>{
-    console.log("Drive object was initialized")
+    console.log("Drive was initialized")
 })
 
 async function main(args){
@@ -48,8 +48,9 @@ async function main(args){
     })
     model.dailyAnnouncementsFolderId = dailyAnnouncements.data.files[0].id
     const params = Machine.send(Arguments, "parse", ...args)
-    console.log(params)
+    console.log("params = ", params)
     const today = params.date ? new Date(params.date) : new Date()
+    console.log("announcements from ", today)
     const thisMonth = Dates.MONTHS[today.getMonth()]
     const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
     model.weekDays = Dates.startDayThruFridayRange(today).map(d => {
@@ -99,7 +100,7 @@ async function main(args){
     html.push(`</body></html>`)
     */
 
-   emailBody = emailBody.replace("Vadiapatia", "Vadlapatla")
+    emailBody = emailBody.replace("Vadiapatia", "Vadlapatla")
     await Machine.sendAsync(File, "writeFile", "output.html", emailBody, {encoding: "ascii"})
 }
 
