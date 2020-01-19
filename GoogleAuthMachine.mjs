@@ -50,7 +50,9 @@ const GoogleAuthMachine = {
             tokenData = await File.readFile(TOKEN_PATH, "utf-8")
             token = JSON.parse(tokenData)
         }catch(e){}
-        if(token == null || token.expiry_date <= (new Date()).getTime()) {
+        // See if the client object will use the refresh token to request access extension.
+        // if(token == null || token.expiry_date <= (new Date()).getTime()) {
+        if(token == null){
             token = await this.executeAuthSequence(client)
         }
         client.setCredentials(token)
