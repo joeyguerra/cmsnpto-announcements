@@ -50,7 +50,6 @@ async function main(args){
     const params = Machine.send(Arguments, "parse", ...args)
     console.log("params = ", params)
     const today = params.date ? new Date(params.date) : new Date()
-    console.log("announcements from ", today)
     const thisMonth = Dates.MONTHS[today.getMonth()]
     const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
     model.weekDays = Dates.startDayThruFridayRange(today).map(d => {
@@ -59,6 +58,7 @@ async function main(args){
         return {day: d, month}
     })
     const thisWeeksFiles = []
+    console.log(model.weekDays)
     for(let i = 0; i < model.weekDays.length; i++) {
         let day = model.weekDays[i]
         let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)

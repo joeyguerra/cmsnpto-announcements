@@ -52,7 +52,7 @@ const GoogleAuthMachine = {
         }catch(e){}
         // See if the client object will use the refresh token to request access extension.
         // if(token == null || token.expiry_date <= (new Date()).getTime()) {
-        if(token == null){
+        if(token == null || token.expiry_date <= (new Date()).getTime()){
             token = await this.executeAuthSequence(client)
         }
         client.setCredentials(token)
