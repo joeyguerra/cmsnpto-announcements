@@ -61,6 +61,10 @@ async function main(args){
     console.log(model.weekDays)
     for(let i = 0; i < model.weekDays.length; i++) {
         let day = model.weekDays[i]
+        if(!thisMonthFolder.data) {
+            console.log(thisMonthFolder)
+            throw new Error("There's no announcements")
+        }
         let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)
         if(!folder) continue
         let folderId = folder.id

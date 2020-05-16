@@ -18,7 +18,7 @@ const GoogleDriveMachine = {
             fields: "nextPageToken, files(id, name),files/parents",
             pageToken: null
         })
-        response = await drive.files.list({q: `'${response.data.files.find(f=>f.name==folderName).id}' in parents`,
+        response = await drive.files.list({q: `'${response.data.files.find(f=>f.name.toLowerCase() == folderName.toLowerCase()).id}' in parents`,
             corpora: "user",
             fields: "nextPageToken, files(id, name),files/parents",
             pageToken: null
