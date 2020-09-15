@@ -19,7 +19,8 @@
     "cookie": "^0.4.1",
     "express": "^4.17.1",
     "googleapis": "^39.2.0",
-    "markdown-it": "^9.1.0"
+    "markdown-it": "^9.1.0",
+    "node-forge": ">=0.10.0"
   },
   "devDependencies": {
     "tap": "^14.10.8"
