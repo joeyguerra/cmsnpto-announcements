@@ -16,12 +16,12 @@
   "dependencies": {
     "body-parser": "^1.19.0",
     "cheerio": "^1.0.0-rc.3",
-    "cookie": "^0.4.0",
+    "cookie": "^0.4.1",
     "express": "^4.17.1",
     "googleapis": "^39.2.0",
     "markdown-it": "^9.1.0"
   },
   "devDependencies": {
-    "tap": "^14.6.1"
+    "tap": "^14.10.8"
   }
 }
