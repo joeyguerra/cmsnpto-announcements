@@ -18,11 +18,13 @@ const GoogleDriveMachine = {
             fields: "nextPageToken, files(id, name),files/parents",
             pageToken: null
         })
-        response = await drive.files.list({q: `'${response.data.files.find(f=>f.name.toLowerCase() == folderName.toLowerCase()).id}' in parents`,
+        response = await drive.files.list({q: `'${response.data.files.find(f=>f.name.toLowerCase().indexOf(folderName.toLowerCase()) > -1).id}' in parents`,
             corpora: "user",
             fields: "nextPageToken, files(id, name),files/parents",
             pageToken: null
         })
+        console.log(`listFiles: Folder Name=${folderName}, number of files in folder = ${response?.data?.files.length}, folder id = ${id}`)
+        console.log(`First folder is`, response?.data?.files[0].name)
         return response
     }
 }

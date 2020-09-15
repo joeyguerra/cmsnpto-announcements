@@ -141,7 +141,7 @@ Content-Disposition: form-data; name="body"
 ${letter.body}
 
 ------WebKitFormBoundarygVfmXWoqCWgGd8Ki--`, {"Content-Type":"multipart/form-data; boundary=----WebKitFormBoundarygVfmXWoqCWgGd8Ki", "Referer":`${url.protocol}//${url.hostname}/dashboard/newsletters/edit2/${letter.id}`})
-        console.log(response.res.statusCode, response.body)
+        console.log("POSTing newsletter", response.res.statusCode, response.body)
    },
     async post(url, data, headers = {"Content-Type": "application/x-www-form-urlencoded"}){
         return new Promise((resolve, reject)=>{
@@ -152,6 +152,7 @@ ${letter.body}
                 method: "POST",
                 headers: Object.assign(MtkMachine.headers, headers)
             }, res => {
+                console.log(`POSTing ${url}, statuscode = ${res.statusCode}, headers = `, res.headers)
                 let buffer = []
                 res.setEncoding("utf-8")
                 res.on("data", chunk => buffer.push(chunk))
@@ -172,6 +173,7 @@ ${letter.body}
                 method: "GET",
                 headers: MtkMachine.headers
             }, res => {
+                //console.log(`GETting ${url}, statuscode = ${res.statusCode}, headers = `, res.headers)
                 let buffer = []
                 res.setEncoding("utf-8")
                 res.on("data", chunk => buffer.push(chunk))

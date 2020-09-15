@@ -24,11 +24,11 @@ Second step is to get the `credentials.json` file (contact me).
 Third step is to authenticate with Google.
 
 ```bash
-npm start -- --date=10/2/2019
+npm start -- --date=10/2/2019 --folder="2020-2021"
 ```
 
 The date is the first folder to read in google drive (assuming they're named something like OCOTOBER 2).
 
-When you run `npm start -- --date=10/2/2019` in your terminal, you'll see a URL. Enter that URL into your browser's URL field and hit `return`. The program will start a web server which will intercept the HTTP redirect from Google's OAuth sequence, capture the `code` and write it in a file called `token.json`. Subsequent executions shouldn't require you to enter an authentication code until that `Token` expires.
+When you run `npm start -- --date=10/2/2019  --folder="2020-2021"` in your terminal, you'll see a URL. Enter that URL into your browser's URL field and hit `return`. The program will start a web server which will intercept the HTTP redirect from Google's OAuth sequence, capture the `code` and write it in a file called `token.json`. Subsequent executions shouldn't require you to enter an authentication code until that `Token` expires.
 
 The output of the program will be a text file called `output.html` in the app directory and a scheduled newsletter. Then just login to membership toolkit and release the newsletter.

@@ -13,7 +13,13 @@ const File = fs.promises
 
 // This is an "self documenting code" example where the funciton name conveys a rule.
 const findAFolderForThisDay = (day, files)=>{
-    return files.find(f=>f.name.trim().toLowerCase() == day.month.toLowerCase())
+    // folder.name convention: Month Day (e.g. September 15)
+    //return files.find(f=>f.name.trim().toLowerCase() == day.month.toLowerCase())
+
+    // folder.name convention: Day (e.g. 8)
+    return files.find(f=>{
+        return Number(f.name.trim().toLowerCase()) == day.day.getDate()
+    })
 }
 
 /*
@@ -22,7 +28,8 @@ I'm exploring the idea of executing the test "with" the code when the program st
 to write self documenting code. The rule is explicitly asserted in code.
 
 */
-const september = findAFolderForThisDay({day: 3, month: "SEPTEMBER 3"}, [{name: "September 3"}])
+//const september = findAFolderForThisDay({day: 3, month: "SEPTEMBER 3"}, [{name: "September 3"}])
+const september = findAFolderForThisDay({day: new Date("September 3, 2021")}, [{name: "3"}])
 assert.ok(september != null)
 
 const model = MakeObservable({
@@ -38,17 +45,18 @@ model.observe("drive", (key, old, v)=>{
 })
 
 async function main(args){
+    const params = Machine.send(Arguments, "parse", ...args)
+    console.log("params = ", params)
+    const folder = params.folder || "DAILY ANNOUNCEMENTS"
     model.credentials = JSON.parse(await Machine.sendAsync(File, "readFile", "credentials.json", "utf-8"))
     model.client = await Machine.sendAsync(GoogleAuthMachine, "init", model.credentials)
     model.drive = Machine.send(GoogleDriveMachine, "init", model.client)
-    const dailyAnnouncements = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: "name = 'DAILY ANNOUNCEMENTS'",
+    const dailyAnnouncements = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `name = '${folder}'`,
         corpora: "user",
         fields: "nextPageToken, files(id, name),files/parents",
         pageToken: null
     })
     model.dailyAnnouncementsFolderId = dailyAnnouncements.data.files[0].id
-    const params = Machine.send(Arguments, "parse", ...args)
-    console.log("params = ", params)
     const today = params.date ? new Date(params.date) : new Date()
     const thisMonth = Dates.MONTHS[today.getMonth()]
     const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
@@ -58,14 +66,14 @@ async function main(args){
         return {day: d, month}
     })
     const thisWeeksFiles = []
-    console.log(model.weekDays)
     for(let i = 0; i < model.weekDays.length; i++) {
         let day = model.weekDays[i]
         if(!thisMonthFolder.data) {
-            console.log(thisMonthFolder)
+            console.log("error", thisMonthFolder)
             throw new Error("There's no announcements")
         }
         let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)
+        console.log(`Reading for day = `, day, folder)
         if(!folder) continue
         let folderId = folder.id
         let filesForDay = await Machine.sendAsync(GoogleDriveMachine, "listFolders", {q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.document'`,
