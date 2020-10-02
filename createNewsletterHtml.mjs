@@ -59,18 +59,23 @@ async function main(args){
     model.dailyAnnouncementsFolderId = dailyAnnouncements.data.files[0].id
     const today = params.date ? new Date(params.date) : new Date()
     const thisMonth = Dates.MONTHS[today.getMonth()]
-    const thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
     model.weekDays = Dates.startDayThruFridayRange(today).map(d => {
         let month = Dates.formatMonthDate(d).toLowerCase()
         month = `${month.charAt(0).toUpperCase()}${month.slice(1)}`
         return {day: d, month}
     })
     const thisWeeksFiles = []
-    for(let i = 0; i < model.weekDays.length; i++) {
+    let previous = null
+    let thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", thisMonth, model.dailyAnnouncementsFolderId)
+    for (let i = 0; i < model.weekDays.length; i++) {
         let day = model.weekDays[i]
         if(!thisMonthFolder.data) {
             console.log("error", thisMonthFolder)
             throw new Error("There's no announcements")
+        }
+        if(previous && previous.day.getMonth() != day.day.getMonth()){
+            console.log("need to get files from different folder", previous, day)
+            thisMonthFolder = await Machine.sendAsync(GoogleDriveMachine, "listFiles", Dates.MONTHS[day.day.getMonth()], model.dailyAnnouncementsFolderId)
         }
         let folder = findAFolderForThisDay(day, thisMonthFolder.data.files)
         console.log(`Reading for day = `, day, folder)
@@ -82,8 +87,10 @@ async function main(args){
             pageToken: null
         })
         thisWeeksFiles.push({day: day, files: filesForDay.data.files})
+        previous = day
     }
     model.html.push(`<div style="text-align: left;">`)
+
     for(let i = 0; i < thisWeeksFiles.length; i++){
         let f = thisWeeksFiles[i]
         model.html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
@@ -94,7 +101,7 @@ async function main(args){
                 fileId: file.id,
                 mimeType: "text/plain"
             })
-            console.log(`   ${file.name} - ${file.mimeType}`)
+            console.log(`   ${file.name} - ${file.mimeType}`)            
             model.html.push("<li>")
             try{
                 model.html.push(md.render(fileMeta.data))
