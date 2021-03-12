@@ -33,7 +33,7 @@ const MtkMachine = MakeObservable({
             }
         }
         if(MtkMachine.cookie.length == 0){
-            let res = await Machine.sendAsync(MtkMachine, "login", "https://cmsnpto.membershiptoolkit.com/login", "done")
+            let res = await Machine.sendAsync(MtkMachine, "login", "https://cmsnpto.membershiptoolkit.com/login-form", "done")
             if(res){
                 console.error("error occurred", res)
                 return process.exit(1)
@@ -61,6 +61,10 @@ const MtkMachine = MakeObservable({
             }
             const req = https.request(options, async res => {
                 res.setEncoding("utf-8")
+                if(res.statusCode > 299) {
+                    console.error("ERROR: login url is wrong", res.statusCode, res.headers)
+                    process.exit(0)
+                }
                 const data = []
                 res.on("data", chunk=>data.push(chunk))
                 res.on("error", e=>console.error("error on response", e))

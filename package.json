@@ -5,11 +5,11 @@
   "repository": "https://github.com/joeyguerra/cmsnpto-announcements.git",
   "main": "index.js",
   "scripts": {
-    "start": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules index.mjs",
+    "start": "env $(cat .env | grep -v \"#\" | xargs -0) node index.mjs",
     "test": "env $(cat .env | grep -v \"#\" | xargs -0) tap examples/**/*.mjs",
     "test:local": "env $(cat .env | grep -v \"#\" | xargs -0) tap -w",
-    "authorize": "node --experimental-modules authorize.mjs",
-    "duplicate": "env $(cat .env | grep -v \"#\" | xargs -0) node --experimental-modules duplicateNewsletter.mjs"
+    "authorize": "node authorize.mjs",
+    "duplicate": "env $(cat .env | grep -v \"#\" | xargs -0) node duplicateNewsletter.mjs"
   },
   "author": "Joey Guerra",
   "license": "ISC",
@@ -18,7 +18,7 @@
     "cheerio": "^1.0.0-rc.3",
     "cookie": "^0.4.1",
     "express": "^4.17.1",
-    "googleapis": "^39.2.0",
+    "googleapis": "^67.1.1",
     "markdown-it": "^9.1.0",
     "node-forge": ">=0.10.0"
   },
