@@ -3,9 +3,8 @@ on: [push]
 jobs:
   check-bats-version:
     runs-on: ubuntu-latest
-    steps:uses:
+    steps:
      - uses: actions/checkout@v2
      - uses: actions/setup-node@v1
      - run: npm i -g bats
      - run: bats -v
-     
