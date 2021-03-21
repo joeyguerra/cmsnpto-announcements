@@ -1,16 +1,18 @@
 name: learn-github-actions
-on: [push]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 jobs:
-  setup:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-      - run: npm i
-  test:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - run: npm test
+    - uses: actions/checkout@v2
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14'
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
