@@ -1,12 +1,16 @@
 name: learn-github-actions
 on: [push]
 jobs:
-  check-bats-version:
+  setup:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
       with:
         node-version: '14'
-    - run: npm i
-    - run: npm test
+      - run: npm i
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm test
