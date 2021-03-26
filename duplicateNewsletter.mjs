@@ -61,12 +61,35 @@ const MtkMachine = MakeObservable({
             }
             const req = https.request(options, async res => {
                 res.setEncoding("utf-8")
-                if(res.statusCode > 299) {
-                    console.error("ERROR: login url is wrong", res.statusCode, res.headers)
+                switch(res.statusCode){
+                    case(300):
+                        console.log("UNEXPECTED: Multiple choices?", res.statusCode, res.headers)
+                        process.exit(0)
+                    case(301):
+                        console.error("ERROR: Moved permanently", res.statusCode, res.headers)
+                        process.exit(0)
+                    case(303):
+                        console.info("See Other", res.statusCode, res.headers)
+                        break
+                    case(400):
+                        console.error("ERROR: Bad Request", res.statusCode, res.headers)
+                        process.exit(0)
+                    case(401):
+                        console.error("ERROR: Unauthorized", res.statusCode, res.headers)
+                        process.exit(0)
+                    default:
+                        break
+                }
+                if(res.statusCode > 400){
+                    console.error("ERROR: Irrecoverable", res.statusCode, res.headers)
                     process.exit(0)
                 }
+
                 const data = []
-                res.on("data", chunk=>data.push(chunk))
+                res.on("data", chunk=>{
+                    console.log(chunk)
+                    data.push(chunk)
+                })
                 res.on("error", e=>console.error("error on response", e))
                 res.on("end", async ()=>{
                     const $ = cheerio.load(data.join("\n"))
@@ -82,7 +105,7 @@ const MtkMachine = MakeObservable({
                 })
             })
             req.on("error", e=>console.error("error from https request to ", url, e))
-            req.write(`email=${config.email}&password=${config.password}`)
+            req.write(`email=${config.email}&password=${config.password}&browser_stats=Netscape~5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15~24~1920~1080~1920~1055~MacIntel`)
             req.end()    
         })
     },
