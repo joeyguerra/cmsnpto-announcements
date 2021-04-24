@@ -86,7 +86,7 @@ async function main(args){
             fields: "nextPageToken, files(id, name, mimeType),files/parents",
             pageToken: null
         })
-        console.log(filesForDay)
+        console.log('filesForDay', filesForDay)
         thisWeeksFiles.push({day: day, files: filesForDay.data.files})
         previous = day
     }
@@ -95,7 +95,7 @@ async function main(args){
     for(let i = 0; i < thisWeeksFiles.length; i++){
         let f = thisWeeksFiles[i]
         model.html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
-        console.log(`Getting ${Dates.DAYS[f.day.day.getDay()]}'s announcements.`)
+        console.log(`Getting ${Dates.DAYS[f.day.day.getDay()]}'s announcements. ${f.files.length} # of files.`)
         for(let k = 0; k < f.files.length; k++){
             let file = f.files[k]
             let fileMeta = await Machine.sendAsync(GoogleDriveMachine, "export", {

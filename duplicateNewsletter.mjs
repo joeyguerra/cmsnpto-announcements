@@ -60,7 +60,8 @@ const MtkMachine = MakeObservable({
                 }
             }
             const req = https.request(options, async res => {
-                res.setEncoding("utf-8")
+                res.setEncoding("utf-8");
+                console.log('logging in', res.statusCode, res.headers);
                 switch(res.statusCode){
                     case(300):
                         console.log("UNEXPECTED: Multiple choices?", res.statusCode, res.headers)
@@ -87,14 +88,15 @@ const MtkMachine = MakeObservable({
 
                 const data = []
                 res.on("data", chunk=>{
-                    console.log(chunk)
                     data.push(chunk)
                 })
                 res.on("error", e=>console.error("error on response", e))
                 res.on("end", async ()=>{
                     const $ = cheerio.load(data.join("\n"))
-                    if(!res.headers.location){
-                        reject({error: {message: $(".alert-error").text(), statusCode: res.statusCode }})
+                    const alertError = $(".alert-error").text()
+                    console.log('alert-error', alertError);
+                    if(alertError){
+                        reject({error: {message: alertError, statusCode: res.statusCode, headers: res.headers }})
                     } else {
                         MtkMachine.headers.Cookie = res.headers["set-cookie"]
                         MtkMachine.cookie = MtkMachine.headers.Cookie.map(c=>cookie.parse(c))
