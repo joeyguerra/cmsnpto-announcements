@@ -86,7 +86,6 @@ async function main(args){
             fields: "nextPageToken, files(id, name, mimeType),files/parents",
             pageToken: null
         })
-        console.log('filesForDay', filesForDay)
         thisWeeksFiles.push({day: day, files: filesForDay.data.files})
         previous = day
     }

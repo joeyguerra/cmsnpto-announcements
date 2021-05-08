@@ -94,8 +94,8 @@ const MtkMachine = MakeObservable({
                 res.on("end", async ()=>{
                     const $ = cheerio.load(data.join("\n"))
                     const alertError = $(".alert-error").text()
-                    console.log('alert-error', alertError);
                     if(alertError){
+                        console.log('alert-error', alertError);
                         reject({error: {message: alertError, statusCode: res.statusCode, headers: res.headers }})
                     } else {
                         MtkMachine.headers.Cookie = res.headers["set-cookie"]
@@ -113,17 +113,18 @@ const MtkMachine = MakeObservable({
     },
     async listSentNewsletters(){
         let response = await Machine.sendAsync(MtkMachine, "get", "https://cmsnpto.membershiptoolkit.com/dashboard/newsletters/sent")
-        const $ = cheerio.load(response.body)
-        const list = []
-        $(".dashboard-summary table tr").each((i, n)=>{
-            const newsLeter = {
+        const $ = cheerio.load(response.body);
+        const list = $("table tr").filter((i, n)=>{
+            return $("td:nth-child(2) a", n).text().indexOf('Student Announcements') > -1;
+        }).map((i, n)=>{
+            const newsLetter = {
                 id: $("td:first-child input", n).attr("value"),
                 name: $("td:nth-child(2) a", n).text(),
                 link: $("td:nth-child(2) a", n).attr("href")
-            }
-            if(newsLeter.name.indexOf("Student Announcements") > -1) list.push(newsLeter)
-        })
-        return list
+            };
+            return newsLetter;
+        }).toArray();
+        return list;
     },
     async duplicateNewsletter(newsLetter){
         const data = await Machine.sendAsync(File, "readFile", "output.html", "utf-8")
@@ -149,6 +150,7 @@ const MtkMachine = MakeObservable({
             id: id,
             option: "save"
         }
+
         if(data.code){
             console.error(data)
         } else {
