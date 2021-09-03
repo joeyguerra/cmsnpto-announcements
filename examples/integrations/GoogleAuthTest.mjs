@@ -1,5 +1,5 @@
 import assert from "assert"
-import GoogleAuth from "../GoogleAuth.mjs"
+import GoogleAuth from "../../GoogleAuth.mjs"
 import fs from "fs"
 
 const File = fs.promises

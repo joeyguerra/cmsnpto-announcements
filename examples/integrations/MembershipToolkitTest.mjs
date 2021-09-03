@@ -1,5 +1,5 @@
 import assert from "assert"
-import MembershipToolKit from "../MembershipToolKit.mjs"
+import MembershipToolKit from "../../MembershipToolKit.mjs"
 
 it.skip("Should login to MTK", async ()=>{
     let res = await MembershipToolKit.login({email: process.env.email, password: process.env.password}, "https://cmsnpto.membershiptoolkit.com/login-form", async ()=>{

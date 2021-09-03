@@ -1,7 +1,7 @@
 import assert from "assert"
-import GoogleAuth from "../GoogleAuth.mjs"
-import GoogleDrive from "../GoogleDrive.mjs"
-import Dates from "../lib/Dates.mjs"
+import GoogleAuth from "../../GoogleAuth.mjs"
+import GoogleDrive from "../../GoogleDrive.mjs"
+import Dates from "../../lib/Dates.mjs"
 import fs from "fs"
 
 const File = fs.promises

@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "env $(cat .env | grep -v \"#\" | xargs -0) node index.mjs",
-    "test": "env $(cat .env | grep -v \"#\" | xargs -0) mocha --parallel examples/**/*.mjs",
+    "test": "env $(cat .env | grep -v \"#\" | xargs -0) mocha --parallel examples/unit/**/*.mjs",
     "test:local": "env $(cat .env | grep -v \"#\" | xargs -0) mocha --parallel --watch",
     "authorize": "node authorize.mjs",
     "duplicate": "env $(cat .env | grep -v \"#\" | xargs -0) node duplicateNewsletter.mjs"

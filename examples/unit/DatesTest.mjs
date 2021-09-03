@@ -1,5 +1,5 @@
 
-import Dates from "../lib/Dates.mjs"
+import Dates from "../../lib/Dates.mjs"
 import assert from "assert"
 
 it("Monday - friday on a Tuesday", done => {

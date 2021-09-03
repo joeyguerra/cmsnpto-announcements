@@ -1,5 +1,5 @@
 import assert from "assert"
-import CliArguments from "../lib/CliArguments.mjs"
+import CliArguments from "../../lib/CliArguments.mjs"
 it("Should parse a space delimited line", () =>{
     let expected = {
         name: "Test"
