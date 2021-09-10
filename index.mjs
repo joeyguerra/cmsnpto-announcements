@@ -64,10 +64,11 @@ const findAFolderForThisDay = (day, files)=>{
         previous = day
     }
     let html = []
-    html.push(`<div style="text-align: left;">`)
+    //html.push(`<div style="text-align: left;">`)
     for(let i = 0; i < thisWeeksFiles.length; i++){
         let f = thisWeeksFiles[i]
-        html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
+        //html.push(`<p style="text-decoration: underline;"><strong>${Dates.DAYS[f.day.day.getDay()]}</strong></p><ul>`)
+        html.push(`${Dates.DAYS[f.day.day.getDay()]}`)
         console.log(`Getting ${Dates.DAYS[f.day.day.getDay()]}'s announcements. ${f.files.length} # of files.`)
         for(let k = 0; k < f.files.length; k++){
             let file = f.files[k]
@@ -76,17 +77,18 @@ const findAFolderForThisDay = (day, files)=>{
                 mimeType: "text/plain"
             })
             console.log(`   ${file.name} - ${file.mimeType}`)            
-            html.push("<li>")
+            //html.push("<li>")
             try{
-                html.push(md.render(fileMeta.data))
+                //html.push(md.render(fileMeta.data))
+                html.push(fileMeta.data)
             }catch(e){
                 console.error("**************ERROR", e, fileMeta)
             }
-            html.push("</li>")
+            //html.push("</li>")
         }
-        html.push("</ul>")
+        //html.push("</ul>")
     }
-    html.push("</div>")
+    //html.push("</div>")
     let emailBody = html.join("\r\n")
     /* Only if you want to have a valid full html doc.
     html.unshift(`<!doctype html><html><head></head><body>`)
@@ -104,3 +106,7 @@ const findAFolderForThisDay = (day, files)=>{
     await MembershipToolKit.start(config)
     process.exit(0)
 })()
+
+
+//Coppell Middle School North PTO
+///cmsnorthpto@gmail.com

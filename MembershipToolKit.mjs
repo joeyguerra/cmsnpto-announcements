@@ -15,7 +15,7 @@ const MembershipToolKit = {
         "Accept":"/",
         "Connection": "keep-alive"
     },
-    async start(){
+    async start(config){
         const rawCookie = await File.readFile("cookies.txt", "utf-8")
         if(!rawCookie.code) MembershipToolKit.headers.Cookie = rawCookie.split("\n")
         if(MembershipToolKit.headers.Cookie){
@@ -26,8 +26,8 @@ const MembershipToolKit = {
             }
         }
         if(MembershipToolKit.cookie.length == 0){
-            let res = await MembershipToolKit.login("https://cmsnpto.membershiptoolkit.com/login-form", this.done.bind(this))
-            if(res){
+            let res = await MembershipToolKit.login(config, "https://cmsnpto.membershiptoolkit.com/login-form", this.done.bind(this))
+            if(res.error != null){
                 console.error("error occurred", res)
                 return process.exit(1)
             }
@@ -121,6 +121,7 @@ const MembershipToolKit = {
         let response = await MembershipToolKit.post(newsLetter.link, `action=duplicate`)
         const url = Url.parse(response.res.headers.location)
         response = await MembershipToolKit.get(url.href)
+        await File.writeFile("duplicatedNewsLetter.html", response.body, "utf-8");
         const $ = cheerio.load(response.body)
         const id = url.href.split("/").pop()
         const form = $("#edit_newsletter_form")
@@ -135,19 +136,16 @@ const MembershipToolKit = {
         const scheduled_datetime = $("[name='scheduled_datetime']", form).attr("value")
         const today = new Date()
         const params = {command: "savenlsettings", id, list_ids, from_email, from_email_name, subject: `CMSN Student Announcements - ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`}
-        response = await MembershipToolKit.post(`${url.protocol}//${url.hostname}/gateway`, querystring.stringify(params))
+        response = await MembershipToolKit.post(`${url.protocol}//${url.hostname}/gateway`, (new URLSearchParams(params)).toString())
         let letter = {
             id: id,
             option: "save"
         }
 
-        if(data.code){
-            console.error(data)
-        } else {
-            $("#mail-body td:nth-child(2) table tr:nth-child(2) td div.mtk-editable", newsLetterBody).html(data)
-            letter.body = newsLetterBody.html()
-        }
-        response = await MembershipToolKit.post(`${url.protocol}//${url.hostname}/dashboard/newsletters/edit2/${letter.id}`,
+        $("#mail-body td:nth-child(2) table tr:nth-child(2) td div.mtk-editable", newsLetterBody).html(data)
+        letter.body = newsLetterBody.html()
+
+        response = await MembershipToolKit.post(`${url.protocol}//${url.hostname}/dashboard/newsletters/editor/${letter.id}`,
 `------WebKitFormBoundarygVfmXWoqCWgGd8Ki
 Content-Disposition: form-data; name="id"
 
