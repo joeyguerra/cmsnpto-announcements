@@ -19,7 +19,7 @@
     "cookie": "^0.4.1",
     "express": "^4.17.1",
     "googleapis": "^67.1.1",
-    "markdown-it": "^9.1.0",
+    "markdown-it": "^12.3.2",
     "node-forge": ">=0.10.0"
   },
   "devDependencies": {
