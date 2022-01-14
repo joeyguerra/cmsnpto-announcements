@@ -20,7 +20,7 @@
     "express": "^4.17.1",
     "googleapis": "^67.1.1",
     "markdown-it": "^9.1.0",
-    "node-forge": ">=0.10.0"
+    "node-forge": ">=1.0.0"
   },
   "devDependencies": {
     "mocha": "^9.1.1"
